@@ -1,4 +1,5 @@
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_community.vectorstores import Qdrant
 from langchain_openai import OpenAIEmbeddings
@@ -15,12 +16,20 @@ logger = logging.getLogger(__name__)
 
 class RAGService:
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            temperature=0.8,  # Увеличиваем для более креативных ответов
-            max_tokens=3000   # Увеличиваем для более развернутых ответов
-        )
+        if getattr(settings, 'llm_provider', 'openai') == 'gemini':
+            self.llm = ChatGoogleGenerativeAI(
+                model=settings.gemini_model,
+                google_api_key=settings.gemini_api_key,
+                temperature=0.8,
+                max_output_tokens=3000
+            )
+        else:
+            self.llm = ChatOpenAI(
+                model=settings.openai_model,
+                api_key=settings.openai_api_key,
+                temperature=0.8,
+                max_tokens=3000
+            )
         
         self.embeddings = OpenAIEmbeddings(
             model=settings.embedding_openai_model,

@@ -13,9 +13,13 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingService:
     def __init__(self):
-        self.openai_client = OpenAI(api_key=settings.openai_api_key)
         self.provider = settings.embedding_provider
         self.model_name = settings.embedding_model
+        
+        # Initialize OpenAI client only when needed
+        self.openai_client = None
+        if self.provider == "openai":
+            self.openai_client = OpenAI(api_key=settings.openai_api_key)
         
         # Initialize SentenceTransformers if using local embeddings
         self.local_model = None
@@ -72,6 +76,8 @@ class EmbeddingService:
     
     def _get_openai_embeddings(self, texts: List[str], batch_size: int) -> List[np.ndarray]:
         """Get embeddings using OpenAI API"""
+        if not self.openai_client:
+            raise ValueError("OpenAI client is not initialized. Set embedding_provider='openai' and provide OPENAI_API_KEY.")
         embeddings = []
         
         for i in range(0, len(texts), batch_size):

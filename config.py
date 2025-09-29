@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     openai_max_tokens: int = 2000
     openai_temperature: float = 0.7
     
+    # LLM Provider Selection
+    llm_provider: str = "openai"
+    # Gemini
+    gemini_api_key: Optional[str] = None
+    gemini_model: str = "gemini-1.5-pro"
+    
     # Embedding Settings
     embedding_provider: str = "openai"
     embedding_model: str = "text-embedding-3-small"
@@ -216,9 +222,29 @@ def validate_settings():
     
     return True
 
-# Validate settings on import
+# Validate settings on import (with conditional OpenAI requirement)
 try:
-    validate_settings()
+    # Build required list dynamically based on provider choices
+    base_required = [
+        "database_url",
+        "qdrant_url",
+        "qdrant_api_key",
+        "jwt_secret_key",
+        "secret_key"
+    ]
+    if settings.embedding_provider == "openai" or settings.llm_provider == "openai":
+        base_required.insert(0, "openai_api_key")
+    
+    def _validate_dynamic_required():
+        missing = []
+        for field in base_required:
+            if not getattr(settings, field, None):
+                missing.append(field)
+        if missing:
+            raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+        return True
+    
+    _validate_dynamic_required()
 except ValueError as e:
     print(f"Configuration Error: {e}")
     print("Please check your .env file and ensure all required variables are set")
